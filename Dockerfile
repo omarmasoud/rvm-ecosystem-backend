@@ -12,7 +12,6 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
-        postgresql-client \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,5 +30,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run migrations, setup data, and start the application
-CMD ["sh", "-c", "python manage.py migrate && python manage.py setup_initial_data && python manage.py runserver 0.0.0.0:8000"] 
+# Run migrations and start the application
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"] 

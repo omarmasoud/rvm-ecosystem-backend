@@ -1,6 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from core.models import UserRole, MaterialType, RVM
+from core.models import UserRole, MaterialType, RVM, RewardWallet, RecyclingActivity
+from decimal import Decimal
+import random
 
 User = get_user_model()
 
@@ -113,7 +115,6 @@ class Command(BaseCommand):
             user_objs.append(user)
 
         # --- CREATE WALLETS FOR ALL USERS ---
-        from core.models import RewardWallet
         for user in user_objs:
             wallet, created = RewardWallet.objects.get_or_create(user=user)
             if created:
@@ -122,8 +123,6 @@ class Command(BaseCommand):
                 self.stdout.write(f"Wallet already exists for: {user.email}")
 
         # --- CREATE RECYCLING ACTIVITIES FOR EACH USER ---
-        from core.models import RecyclingActivity, MaterialType, RVM
-        import random
         materials = list(MaterialType.objects.all())
         rvms = list(RVM.objects.all())
         for user in user_objs:
@@ -131,12 +130,13 @@ class Command(BaseCommand):
                 material = random.choice(materials)
                 rvm = random.choice(rvms)
                 weight = round(random.uniform(0.5, 3.0), 3)  # 0.5kg to 3kg
+                weight_decimal = Decimal(str(weight))  # Convert to Decimal
                 activity = RecyclingActivity.objects.create(
                     user=user,
                     rvm=rvm,
                     material=material,
-                    weight=weight,
-                    points_earned=weight * material.points_per_kg
+                    weight=weight_decimal,
+                    points_earned=weight_decimal * material.points_per_kg
                 )
                 self.stdout.write(f"Created activity for {user.email}: {weight}kg {material.name} at {rvm.name}")
 

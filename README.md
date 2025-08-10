@@ -1,4 +1,4 @@
-## RVM Ecosystem Backend
+# RVM Ecosystem Backend
 
 Django REST Framework API for recycling vending machines and user rewards.
 
@@ -169,56 +169,62 @@ python manage.py runserver
 
 ## Docker Deployment
 
-For a quick and easy deployment using Docker, use the provided `install.sh` script.
+You can manually build and run the Docker container:
 
-### Usage with `install.sh`
+### 1. Build the Docker Image
+```bash
+docker build -f Dockerfile -t rvm-backend .
+```
 
-1.  **Make the script executable:**
-    ```bash
-    chmod +x install.sh
-    ```
-2.  **Run the script:**
-    ```bash
-    ./install.sh
-    ```
+### 2. Run the Docker Container
+```bash
+docker run -p 8000:8000 --name rvm-backend-app rvm-backend
+```
 
-This script will:
-*   Build the `rvm-backend` Docker image using `Dockerfile.prod`.
-*   Run the container in detached mode, exposing port `8000`.
-*   **Important:** You **must** modify `install.sh` to provide your actual `DATABASE_URL` and `SECRET_KEY` before running it in a production-like environment.
+**Note:** The container runs in the foreground (not detached) so you can see the logs directly in your terminal.
 
-### Manual Build and Run Steps
-
-Alternatively, you can manually build and run the Docker container:
-
-1.  **Build the Docker Image (Production):**
-    ```bash
-    docker build -f Dockerfile.prod -t rvm-backend .
-    ```
-2.  **Run the Docker Container:**
-    ```bash
-    docker run -d --rm -p 8000:8000 \
-      -e DATABASE_URL="your_postgresql_connection_string_here" \
-      -e DEBUG="False" \
-      -e SECRET_KEY="your_django_secret_key_here" \
-      --name rvm-backend-app \
-      rvm-backend
-    ```
-    *   **Important:** Replace `"your_postgresql_connection_string_here"` and `"your_django_secret_key_here"` with your actual production database URL and Django secret key.
-
-### Accessing the Application
+### 3. Access the Application
 
 Once the container is running:
 *   **Web UI (Login/Signup):** `http://localhost:8000/`
 *   **API Root (Browsable API):** `http://localhost:8000/api/`
 *   **Admin Panel:** `http://localhost:8000/admin/`
 
-To view container logs: `docker logs rvm-backend-app`
-To stop the container: `docker stop rvm-backend-app`
+### 4. Setup Initial Data (Optional)
+In a new terminal, run:
+```bash
+docker exec -it rvm-backend-app python manage.py setup_initial_data
+```
 
-### Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string (e.g., `postgresql://user:pass@host:5432/db`)
-- `DEBUG`: Set to `False` for production
-- `SECRET_KEY`: Django secret key
+### 5. Container Management
+- **View logs:** Logs are displayed directly in the terminal where you ran the container
+- **Stop the container:** Press `Ctrl+C` in the terminal where the container is running
+- **Remove container:** `docker rm rvm-backend-app`
 
-Built with Django & Django REST Framework 
+## Development vs Production
+
+### Development (Current Setup)
+- Uses SQLite database (no external dependencies)
+- DEBUG mode enabled
+- Simple Docker setup with no environment variables needed
+
+### Production (Advanced Setup)
+For production deployment, you may want to:
+- Use PostgreSQL with `DATABASE_URL` environment variable
+- Set `DEBUG=False`
+- Configure custom `SECRET_KEY`
+- Add proper logging and monitoring
+
+Example production run:
+```bash
+docker run -d -p 8000:8000 \
+  -e DATABASE_URL="postgresql://user:pass@host:5432/db" \
+  -e DEBUG="False" \
+  -e SECRET_KEY="your_django_secret_key_here" \
+  --name rvm-backend-app \
+  rvm-backend
+```
+
+---
+
+**Built with Django & Django REST Framework** 
