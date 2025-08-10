@@ -39,7 +39,7 @@ python manage.py runserver
 git clone https://github.com/omarmasoud/rvm-ecosystem-backend.git
 cd rvm-ecosystem-backend
 
-# Run with Docker Compose
+# Run with Docker Compose (migrations run automatically)
 docker-compose up --build
 
 # Access the application
@@ -50,7 +50,7 @@ docker-compose up --build
 
 ### Production Deployment
 ```bash
-# Build production image
+# Build production image (migrations run automatically)
 docker build -f Dockerfile.prod -t rvm-backend .
 
 # Run with environment variables
