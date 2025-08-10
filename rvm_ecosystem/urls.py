@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.documentation import include_docs_urls
-from core.views import home
+from core.views import home, user_signup, signup_success_view # Import new views
 
 urlpatterns = [
     path('', home, name='home'),
+    path('signup/', user_signup, name='signup'), # New template signup path
+    path('success/', signup_success_view, name='signup_success'), # New template signup success path
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
     path('docs/', include_docs_urls(title='RVM Ecosystem API')),

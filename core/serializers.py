@@ -64,13 +64,14 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class MaterialTypeSerializer(serializers.ModelSerializer):
+    """Serializer for recyclable material types and their point values"""
     class Meta:
         model = MaterialType
         fields = ['id', 'name', 'points_per_kg', 'is_active']
 
 
 class RVMSerializer(serializers.ModelSerializer):
-    """RVM serializer with activity count"""
+    """Serializer for RVMs, used in discovery API. Includes activity count."""
     activity_count = serializers.SerializerMethodField()
     
     class Meta:

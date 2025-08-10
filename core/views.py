@@ -8,7 +8,15 @@ from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.http import JsonResponse
 from datetime import datetime, timedelta
-from django.shortcuts import redirect
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import UserCreationForm
+from .forms import CustomUserCreationForm, CustomAuthenticationForm # Import the custom forms
+from django.contrib import messages # Import messages
+from django_filters.rest_framework import DjangoFilterBackend # Import DjangoFilterBackend
+import django_filters # Import django_filters
+from django.core.validators import MinValueValidator # Import MinValueValidator
 
 from .models import User, UserRole, MaterialType, RVM, RewardWallet, RewardTransaction, RecyclingActivity
 from .serializers import (
@@ -20,10 +28,41 @@ from .serializers import (
 
 
 def home(request):
-    """Root view: redirect based on authentication status"""
+    """Root view: display login or redirect to admin if logged in"""
     if request.user.is_authenticated:
         return redirect('/admin/')
-    return redirect('/admin/login/')
+
+    if request.method == 'POST':
+        form = CustomAuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('/admin/')  # Redirect to admin or a user dashboard
+        else:
+            # Invalid login, render form with errors
+            return render(request, 'login.html', {'form': form})
+    else:
+        form = CustomAuthenticationForm()
+    return render(request, 'login.html', {'form': form})
+
+
+def user_signup(request):
+    """Handle user registration via a template form"""
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'You have successfully signed up! This is the admin panel, where general user functionalities are not available.')
+            return redirect('core:signup_success') # Redirect to new success page
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'signup.html', {'form': form})
+
+
+def signup_success_view(request):
+    """Display success message after signup and inform user about admin panel."""
+    return render(request, 'signup_success.html')
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -94,31 +133,38 @@ class MaterialTypeViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
+class RVMFilter(django_filters.FilterSet):
+    id = django_filters.NumberFilter(field_name='id', lookup_expr='exact', validators=[MinValueValidator(0)]) # Filter by exact ID, must be 0 or greater
+    name = django_filters.CharFilter(lookup_expr='icontains') # Filter by partial, case-insensitive name
+    status = django_filters.ChoiceFilter(choices=RVM.STATUS_CHOICES, lookup_expr='exact') # Status as dropdown
+
+    class Meta:
+        model = RVM
+        fields = ['id', 'name', 'status', 'location'] # Remove last_usage from fields
+
+
 class RVMViewSet(viewsets.ReadOnlyModelViewSet):
-    """List and retrieve RVMs"""
+    """List and retrieve RVMs with advanced filtering"""
     serializer_class = RVMSerializer
     permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = RVM.objects.all()
-        
-        # filter by status if provided
-        status_filter = self.request.query_params.get('status', None)
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-        
-        # filter by recent activity (last 24h)
-        recent_only = self.request.query_params.get('recent', None)
-        if recent_only:
-            yesterday = datetime.now() - timedelta(days=1)
-            queryset = queryset.filter(last_usage__gte=yesterday)
-        
-        # filter by location
-        location = self.request.query_params.get('location', None)
-        if location:
-            queryset = queryset.filter(location__icontains=location)
-        
-        return queryset.order_by('-last_usage')
+    queryset = RVM.objects.all().order_by('-last_usage') # Set initial queryset and ordering here
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = RVMFilter
+
+    # The custom filtering logic is now handled by RVMFilter, so get_queryset can be simpler
+    # def get_queryset(self):
+    #     queryset = RVM.objects.all()
+    #     status_filter = self.request.query_params.get('status', None)
+    #     if status_filter:
+    #         queryset = queryset.filter(status=status_filter)
+    #     recent_only = self.request.query_params.get('recent', None)
+    #     if recent_only:
+    #         yesterday = timezone.now() - timedelta(days=1)
+    #         queryset = queryset.filter(last_usage__gte=yesterday)
+    #     location = self.request.query_params.get('location', None)
+    #     if location:
+    #         queryset = queryset.filter(location__icontains=location)
+    #     return queryset.order_by('-last_usage')
 
 
 class RewardWalletView(generics.RetrieveAPIView):

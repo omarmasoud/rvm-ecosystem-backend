@@ -1,10 +1,44 @@
-# RVM Ecosystem Backend
+## RVM Ecosystem Backend
 
 Django REST Framework API for recycling vending machines and user rewards.
 
-## Task: RVM Ecosystem Data Modeling
+## Features
 
-Complete backend implementation for Drop Me's recycling ecosystem.
+### Data Modeling & Core Functionality
+
+*   **User Management:** Custom user model with email-based authentication, user roles, and a `summary()` method for recycling statistics.
+*   **RVM Management:** Model for Recycling Vending Machines, including location, status (active, inactive, maintenance), and last usage tracking.
+*   **Recycling Activity:** Detailed logging of each recycling transaction, linked to users and RVMs.
+*   **Reward System:** User reward wallets with points and credit balances, complete with an audit trail of transactions.
+*   **Material Types:** Configurable recyclable material types with associated point values.
+
+### API Endpoints
+
+All API endpoints are accessible under the `/api/` prefix.
+
+#### Authentication
+*   `POST /api/auth/register/` - User registration
+*   `POST /api/auth/login/` - User login (returns authentication token)
+
+#### Core Functionality
+*   `POST /api/deposit/` - Record recycling deposit (auto-calculates points)
+*   `GET /api/summary/` - User recycling summary & current wallet balance
+*   `GET /api/rvms/` - List RVMs with advanced filtering (ID, Name, Status (dropdown), Location)
+*   `GET /api/materials/` - List available materials
+
+#### Admin Endpoints
+*   Full CRUD (Create, Retrieve, Update, Delete) operations for all models, accessible via `/api/admin/`.
+
+#### Browsable API
+*   An interactive, automatically generated web UI for all API endpoints, including filtering forms, is available at `/api/`.
+
+### Web UI Endpoints (Template-based)
+
+These endpoints provide basic template-based user interaction outside the API.
+
+*   `/` - Custom Login Page
+*   `/signup/` - User Registration (Sign Up) Page
+*   `/success/` - Signup Success Confirmation Page
 
 ## Setup
 
@@ -12,20 +46,21 @@ Complete backend implementation for Drop Me's recycling ecosystem.
 - Python 3.8+
 - Django 5.1+
 - Django REST Framework
+- Django Filter
 
 ### Installation
 ```bash
-pip install djangorestframework coreapi
+pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
-python manage.py setup_initial_data
+python manage.py setup_initial_data # If applicable, for initial data
 python manage.py runserver
 ```
 
 ### Admin Access
-- URL: http://127.0.0.1:8000/admin/
-- Email: admin@rvm.com
-- Password: admin123
+- URL: `http://127.0.0.1:8000/admin/`
+- Email: `admin@rvm.com`
+- Password: `admin123` (or your configured admin credentials)
 
 ## Docker Deployment
 
@@ -43,7 +78,8 @@ cd rvm-ecosystem-backend
 docker-compose up --build
 
 # Access the application
-# API: http://localhost:8000
+# Web UI: http://localhost:8000
+# API: http://localhost:8000/api/
 # Admin: http://localhost:8000/admin/
 # API Docs: http://localhost:8000/docs/
 ```
@@ -62,52 +98,8 @@ docker run -p 8000:8000 \
 
 ### Environment Variables
 - `DATABASE_URL`: PostgreSQL connection string
-- `DEBUG`: Set to False for production
+- `DEBUG`: Set to `False` for production
 - `SECRET_KEY`: Django secret key
-
-## Models
-
-1. User - Custom user model with email authentication
-2. UserRole - Role-based access control
-3. MaterialType - Recyclable materials with point values
-4. RVM - Recycling Vending Machine locations and status
-5. RewardWallet - User's current point and credit balance
-6. RewardTransaction - Complete audit trail of wallet changes
-7. RecyclingActivity - Individual recycling transactions
-
-## API Endpoints
-
-### Authentication
-- POST /api/auth/register/ - User registration
-- POST /api/auth/login/ - User login
-
-### Core Functionality
-- POST /api/deposit/ - Record recycling deposit
-- GET /api/summary/ - User recycling summary
-- GET /api/rvms/ - List RVMs with filtering
-- GET /api/materials/ - List available materials
-
-### Admin Endpoints
-- Full CRUD operations for all models
-
-## Database Schema
-
-### User Model
-- Email-based authentication
-- Phone number and role assignment
-- summary() method for recycling stats
-
-### Material Types
-- Plastic: 1 point/kg
-- Metal: 3 points/kg  
-- Glass: 2 points/kg
-- Paper: 0.5 points/kg
-- Cardboard: 0.75 points/kg
-
-### Reward System
-- Auto-calculated points: weight × material.points_per_kg
-- Complete transaction history
-- Current balance tracking
 
 ## Egyptian Context
 
@@ -121,6 +113,6 @@ docker run -p 8000:8000 \
 - User.summary() method returning key stats
 - Scalable design with proper relationships
 - Clean admin interface for management
-- API endpoints for all core functionality
+- Comprehensive API endpoints for all core functionality
 
 Built with Django & Django REST Framework 

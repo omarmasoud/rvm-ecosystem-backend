@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up Successful{% endblock %}
+
+{% block content %}
+    <h2>Sign Up Successful!</h2>
+    <p>You have successfully created your account.</p>
+    <p>Please note: This is primarily an **Admin Panel**. General user functionalities and the main application interface are typically accessed through dedicated API endpoints or a separate frontend application.</p>
+    <p><a href="{% url 'core:home' %}">Back to Login</a></p>
+{% endblock %} 
