@@ -30,5 +30,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start the application
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"] 
+# Run migrations, setup initial data, and start the application
+CMD ["sh", "-c", "python manage.py migrate && python manage.py setup_initial_data && python manage.py runserver 0.0.0.0:8000"] 

@@ -190,41 +190,13 @@ Once the container is running:
 *   **API Root (Browsable API):** `http://localhost:8000/api/`
 *   **Admin Panel:** `http://localhost:8000/admin/`
 
-### 4. Setup Initial Data (Optional)
-In a new terminal, run:
-```bash
-docker exec -it rvm-backend-app python manage.py setup_initial_data
-```
+**Note:** The Dockerfile automatically runs migrations and sets up initial data when the container starts, so no manual setup is required.
 
-### 5. Container Management
+### 4. Container Management
 - **View logs:** Logs are displayed directly in the terminal where you ran the container
 - **Stop the container:** Press `Ctrl+C` in the terminal where the container is running
 - **Remove container:** `docker rm rvm-backend-app`
 
-## Development vs Production
 
-### Development (Current Setup)
-- Uses SQLite database (no external dependencies)
-- DEBUG mode enabled
-- Simple Docker setup with no environment variables needed
-
-### Production (Advanced Setup)
-For production deployment, you may want to:
-- Use PostgreSQL with `DATABASE_URL` environment variable
-- Set `DEBUG=False`
-- Configure custom `SECRET_KEY`
-- Add proper logging and monitoring
-
-Example production run:
-```bash
-docker run -d -p 8000:8000 \
-  -e DATABASE_URL="postgresql://user:pass@host:5432/db" \
-  -e DEBUG="False" \
-  -e SECRET_KEY="your_django_secret_key_here" \
-  --name rvm-backend-app \
-  rvm-backend
-```
-
----
 
 **Built with Django & Django REST Framework** 
