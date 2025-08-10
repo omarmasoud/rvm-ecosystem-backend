@@ -107,6 +107,44 @@ These endpoints provide full CRUD operations for all system models. They are acc
 *   **Reward System:** User reward wallets with points and credit balances, complete with an audit trail of transactions.
 *   **Material Types:** Configurable recyclable material types with associated point values.
 
+## Data Model Overview
+
+This section provides a visual representation and explanation of the core database schema, outlining the relationships between different entities in the RVM Ecosystem Backend.
+
+### Entity-Relationship Diagram (ERD)
+
+![RVM Ecosystem ER Diagram](rvm-ecosystem-ERD.svg)
+
+*A visual representation of the database schema for the RVM Ecosystem Backend.*
+
+### Schema Explanation and Relationships
+
+The RVM Ecosystem is built around several interconnected models designed for scalability and clear data representation:
+
+*   **`User` and `UserRole`**: 
+    *   **Relationship:** One-to-Many (`UserRole` to `User`). A `UserRole` (e.g., "Regular User", "Admin", "Technician") can be assigned to multiple `Users`. Each `User` has one `UserRole`.
+    *   **Purpose:** Manages user authentication, personal details, and role-based access within the system.
+
+*   **`MaterialType`**:
+    *   **Purpose:** Defines different recyclable materials (e.g., Plastic, Glass, Metal) and their corresponding point values per kilogram (`points_per_kg`). This allows for flexible and configurable reward calculations.
+
+*   **`RVM` (Recycling Vending Machine)**:
+    *   **Purpose:** Represents the physical recycling machines, storing their location, operational status, and the timestamp of their `last_usage`.
+
+*   **`RewardWallet`**:
+    *   **Relationship:** One-to-One (`User` to `RewardWallet`). Each `User` has exactly one `RewardWallet` that acts as their central balance. This is enforced by `RewardWallet` using `user_id` as its primary key and a one-to-one foreign key to `User`.
+    *   **Purpose:** Stores a user's current accumulated `points` and `credit`.
+
+*   **`RewardTransaction`**:
+    *   **Relationship:** One-to-Many (`RewardWallet` to `RewardTransaction`). Each `RewardWallet` can have multiple `RewardTransaction` records.
+    *   **Purpose:** Provides a complete audit trail of all changes to a user's `RewardWallet` balance, including the `change_amount` and `reason` for the transaction.
+
+*   **`RecyclingActivity`**:
+    *   **Relationship:** Many-to-One with `User`, `RVM`, and `MaterialType`. Each activity is linked to one user, one RVM, and one material type.
+    *   **Purpose:** Records individual recycling events, including the `weight` of material deposited and the `points_earned` from that specific activity. The `timestamp` captures when the activity occurred. This model's `save` method also updates the associated RVM's `last_usage` and adds points to the user's `RewardWallet`.
+
+This structured data model ensures data integrity, facilitates efficient querying, and supports the core functionalities of the RVM ecosystem.
+
 ## Setup
 
 ### Requirements
@@ -131,40 +169,55 @@ python manage.py runserver
 
 ## Docker Deployment
 
-### Prerequisites
-- Docker
-- Docker Compose
+For a quick and easy deployment using Docker, use the provided `install.sh` script.
 
-### Quick Start with Docker
-```bash
-# Clone the repository
-git clone https://github.com/omarmasoud/rvm-ecosystem-backend.git
-cd rvm-ecosystem-backend
+### Usage with `install.sh`
 
-# Run with Docker Compose (migrations run automatically)
-docker-compose up --build
+1.  **Make the script executable:**
+    ```bash
+    chmod +x install.sh
+    ```
+2.  **Run the script:**
+    ```bash
+    ./install.sh
+    ```
 
-# Access the application
-# Web UI: http://localhost:8000
-# API: http://localhost:8000/api/
-# Admin: http://localhost:8000/admin/
-# API Docs: http://localhost:8000/docs/
-```
+This script will:
+*   Build the `rvm-backend` Docker image using `Dockerfile.prod`.
+*   Run the container in detached mode, exposing port `8000`.
+*   **Important:** You **must** modify `install.sh` to provide your actual `DATABASE_URL` and `SECRET_KEY` before running it in a production-like environment.
 
-### Production Deployment
-```bash
-# Build production image (migrations run automatically)
-docker build -f Dockerfile.prod -t rvm-backend .
+### Manual Build and Run Steps
 
-# Run with environment variables
-docker run -p 8000:8000 \
-  -e DATABASE_URL=postgresql://user:pass@host:5432/db \
-  -e DEBUG=False \
-  rvm-backend
-```
+Alternatively, you can manually build and run the Docker container:
+
+1.  **Build the Docker Image (Production):**
+    ```bash
+    docker build -f Dockerfile.prod -t rvm-backend .
+    ```
+2.  **Run the Docker Container:**
+    ```bash
+    docker run -d --rm -p 8000:8000 \
+      -e DATABASE_URL="your_postgresql_connection_string_here" \
+      -e DEBUG="False" \
+      -e SECRET_KEY="your_django_secret_key_here" \
+      --name rvm-backend-app \
+      rvm-backend
+    ```
+    *   **Important:** Replace `"your_postgresql_connection_string_here"` and `"your_django_secret_key_here"` with your actual production database URL and Django secret key.
+
+### Accessing the Application
+
+Once the container is running:
+*   **Web UI (Login/Signup):** `http://localhost:8000/`
+*   **API Root (Browsable API):** `http://localhost:8000/api/`
+*   **Admin Panel:** `http://localhost:8000/admin/`
+
+To view container logs: `docker logs rvm-backend-app`
+To stop the container: `docker stop rvm-backend-app`
 
 ### Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string
+- `DATABASE_URL`: PostgreSQL connection string (e.g., `postgresql://user:pass@host:5432/db`)
 - `DEBUG`: Set to `False` for production
 - `SECRET_KEY`: Django secret key
 
