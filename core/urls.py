@@ -20,6 +20,8 @@ admin_router.register(r'wallets', views.AdminRewardWalletViewSet, basename='admi
 app_name = 'core'
 
 urlpatterns = [
+    path('', views.CustomAPIRoot.as_view(), name='api-root'), # Custom API root
+    # authentication
     path('auth/register/', views.UserRegistrationView.as_view(), name='register'),
     path('auth/login/', views.CustomAuthToken.as_view(), name='login'),
     
@@ -29,11 +31,11 @@ urlpatterns = [
     path('wallet/', views.RewardWalletView.as_view(), name='wallet'),
     
     # main functionality
-    path('deposit/', views.deposit_recyclables, name='deposit'),
+    path('deposit/', views.DepositRecyclablesView.as_view(), name='deposit'),
     
-    # viewset endpoints
+    # viewset endpoints included under this root
     path('', include(router.urls)),
     
-    # admin endpoints
+    # admin endpoints included under this root
     path('admin/', include(admin_router.urls)),
 ] 

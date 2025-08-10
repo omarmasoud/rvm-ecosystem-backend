@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.documentation import include_docs_urls
-from core.views import home, user_signup, signup_success_view # Import new views
+from core.web_views import home, user_signup, signup_success_view # Import from new web_views
 
 urlpatterns = [
     path('', home, name='home'),

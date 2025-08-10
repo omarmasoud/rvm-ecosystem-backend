@@ -4,65 +4,48 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
-from django.contrib.auth import authenticate
 from django.db.models import Q
-from django.http import JsonResponse
 from datetime import datetime, timedelta
-from django.shortcuts import render, redirect
 from django.utils import timezone
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import UserCreationForm
-from .forms import CustomUserCreationForm, CustomAuthenticationForm # Import the custom forms
-from django.contrib import messages # Import messages
-from django_filters.rest_framework import DjangoFilterBackend # Import DjangoFilterBackend
-import django_filters # Import django_filters
-from django.core.validators import MinValueValidator # Import MinValueValidator
+from django.core.validators import MinValueValidator
+from django_filters.rest_framework import DjangoFilterBackend
+import django_filters
+
+from rest_framework.response import Response # Import Response
+from rest_framework.reverse import reverse # Import reverse
+from rest_framework.views import APIView # Import APIView
 
 from .models import User, UserRole, MaterialType, RVM, RewardWallet, RewardTransaction, RecyclingActivity
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, UserLoginSerializer,
     MaterialTypeSerializer, RVMSerializer, RewardWalletSerializer,
-    RewardTransactionSerializer, RecyclingActivitySerializer,
-    RecyclingActivityCreateSerializer, UserSummarySerializer
+    RewardTransactionSerializer, RecyclingActivityCreateSerializer, UserSummarySerializer, RecyclingActivitySerializer
 )
 
 
-def home(request):
-    """Root view: display login or redirect to admin if logged in"""
-    if request.user.is_authenticated:
-        return redirect('/admin/')
+class CustomAPIRoot(APIView):
+    """Custom API Root view to display all available endpoints."""
+    permission_classes = [] # Allow unauthenticated access to the API root overview
 
-    if request.method == 'POST':
-        form = CustomAuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('/admin/')  # Redirect to admin or a user dashboard
-        else:
-            # Invalid login, render form with errors
-            return render(request, 'login.html', {'form': form})
-    else:
-        form = CustomAuthenticationForm()
-    return render(request, 'login.html', {'form': form})
+    def get(self, request, format=None):
+        return Response({
+            'auth_register': reverse('core:register', request=request, format=format),
+            'auth_login': reverse('core:login', request=request, format=format),
+            'user_profile': reverse('core:profile', request=request, format=format),
+            'user_summary': reverse('core:summary', request=request, format=format),
+            'user_wallet': reverse('core:wallet', request=request, format=format),
+            'deposit_recyclables': reverse('core:deposit', request=request, format=format),
 
-
-def user_signup(request):
-    """Handle user registration via a template form"""
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'You have successfully signed up! This is the admin panel, where general user functionalities are not available.')
-            return redirect('core:signup_success') # Redirect to new success page
-    else:
-        form = CustomUserCreationForm()
-    return render(request, 'signup.html', {'form': form})
-
-
-def signup_success_view(request):
-    """Display success message after signup and inform user about admin panel."""
-    return render(request, 'signup_success.html')
+            'materials': reverse('core:material-list', request=request, format=format),
+            'rvms': reverse('core:rvm-list', request=request, format=format),
+            'recycling_activities': reverse('core:activity-list', request=request, format=format),
+            
+            'admin_users': reverse('core:admin-user-list', request=request, format=format),
+            'admin_rvms': reverse('core:admin-rvm-list', request=request, format=format),
+            'admin_activities': reverse('core:admin-activity-list', request=request, format=format),
+            'admin_materials': reverse('core:admin-material-list', request=request, format=format),
+            'admin_wallets': reverse('core:admin-wallet-list', request=request, format=format),
+        })
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -123,7 +106,7 @@ class UserSummaryView(generics.RetrieveAPIView):
         summary['current_points'] = float(wallet.points)
         summary['current_credit'] = float(wallet.credit)
         
-        return summary
+        return Response(summary)
 
 
 class MaterialTypeViewSet(viewsets.ReadOnlyModelViewSet):
@@ -150,21 +133,6 @@ class RVMViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = RVM.objects.all().order_by('-last_usage') # Set initial queryset and ordering here
     filter_backends = [DjangoFilterBackend]
     filterset_class = RVMFilter
-
-    # The custom filtering logic is now handled by RVMFilter, so get_queryset can be simpler
-    # def get_queryset(self):
-    #     queryset = RVM.objects.all()
-    #     status_filter = self.request.query_params.get('status', None)
-    #     if status_filter:
-    #         queryset = queryset.filter(status=status_filter)
-    #     recent_only = self.request.query_params.get('recent', None)
-    #     if recent_only:
-    #         yesterday = timezone.now() - timedelta(days=1)
-    #         queryset = queryset.filter(last_usage__gte=yesterday)
-    #     location = self.request.query_params.get('location', None)
-    #     if location:
-    #         queryset = queryset.filter(location__icontains=location)
-    #     return queryset.order_by('-last_usage')
 
 
 class RewardWalletView(generics.RetrieveAPIView):
@@ -196,22 +164,15 @@ class RecyclingActivityViewSet(viewsets.ModelViewSet):
         return activity
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def deposit_recyclables(request):
+class DepositRecyclablesView(generics.CreateAPIView):
     """Main deposit endpoint - logs recycling and awards points"""
-    serializer = RecyclingActivityCreateSerializer(data=request.data, context={'request': request})
-    
-    if serializer.is_valid():
+    serializer_class = RecyclingActivityCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # The serializer's create method already handles setting user, rvm, and material.
+        # The save method of the RecyclingActivity model handles RVM last_usage update and points.
         activity = serializer.save()
-        
-        return Response({
-            'message': 'Deposit recorded successfully',
-            'activity': RecyclingActivitySerializer(activity).data,
-            'points_earned': float(activity.points_earned)
-        }, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
