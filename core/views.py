@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.http import JsonResponse
 from datetime import datetime, timedelta
+from django.shortcuts import redirect
 
 from .models import User, UserRole, MaterialType, RVM, RewardWallet, RewardTransaction, RecyclingActivity
 from .serializers import (
@@ -19,18 +20,10 @@ from .serializers import (
 
 
 def home(request):
-    """Simple home view for the root URL"""
-    return JsonResponse({
-        'message': 'RVM Ecosystem API',
-        'version': '1.0.0',
-        'endpoints': {
-            'api_docs': '/docs/',
-            'admin': '/admin/',
-            'api_root': '/api/',
-            'auth': '/api/auth/',
-        },
-        'status': 'running'
-    })
+    """Root view: redirect based on authentication status"""
+    if request.user.is_authenticated:
+        return redirect('/admin/')
+    return redirect('/admin/login/')
 
 
 class UserRegistrationView(generics.CreateAPIView):

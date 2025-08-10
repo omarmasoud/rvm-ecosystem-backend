@@ -20,6 +20,7 @@ admin_router.register(r'wallets', views.AdminRewardWalletViewSet, basename='admi
 app_name = 'core'
 
 urlpatterns = [
+    path('', views.home, name='home'),
     # authentication
     path('auth/register/', views.UserRegistrationView.as_view(), name='register'),
     path('auth/login/', views.CustomAuthToken.as_view(), name='login'),
